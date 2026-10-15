@@ -21,9 +21,12 @@ openssl x509 -in /etc/hysteria/server.crt -noout -fingerprint -sha256 | cut -d= 
 rc-service hysteria restart
 rc-service hysteria status
 
+rc-service xray-reality restart
+rc-service xray-reality status
+
 更换密码
 openssl rand -hex 24
-
 vi /etc/hysteria/config.yaml
-
 rc-service hysteria restart
+
+cat /root/LA-NAT-TCP-REALITY.txt
