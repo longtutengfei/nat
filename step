@@ -1,0 +1,28 @@
+bash <(curl -fsSL https://raw.githubusercontent.com/longtutengfei/nat/refs/heads/main/install_hy2_alpine_256m_1g_150ms.sh)
+
+在服务器获取证书信息
+在 Alpine SSH 中执行：
+openssl x509 \
+  -in /etc/hysteria/server.crt \
+  -noout -fingerprint -sha256 \
+  | cut -d= -f2 | tr -d ':\n'
+会得到一串 64 位十六进制字符，这是当前证书的 SHA-256 指纹。
+电脑端可能还需要完整 PEM 证书：cat /etc/hysteria/server.crt
+复制从 -----BEGIN CERTIFICATE----- 到 -----END CERTIFICATE----- 的全部内容。
+
+重新获取  
+openssl x509 -in /etc/hysteria/server.crt -noout -fingerprint -sha256 | cut -d= -f2 | tr -d ':\n'; echo
+
+
+
+
+命令
+rc-service hysteria restart
+rc-service hysteria status
+
+更换密码
+openssl rand -hex 24
+
+vi /etc/hysteria/config.yaml
+
+rc-service hysteria restart
