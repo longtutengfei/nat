@@ -1,4 +1,5 @@
 bash <(curl -fsSL https://raw.githubusercontent.com/longtutengfei/nat/refs/heads/main/install_hy2_alpine_256m_1g_150ms.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/longtutengfei/nat/refs/heads/main/install_xray_reality_tcp_alpine_256m.sh)
 
 在服务器获取证书信息
 在 Alpine SSH 中执行：
