@@ -86,7 +86,7 @@ info "生成 UUID、REALITY 密钥及 Short ID ..."
 UUID=$("$TMPD/xray" uuid | tr -d '\r\n')
 KEYS=$("$TMPD/xray" x25519)
 PRIVATE_KEY=$(printf '%s\n' "$KEYS" | awk -F': *' '/^PrivateKey:/ {print $2; exit}')
-PUBLIC_KEY=$(printf '%s\n' "$KEYS" | awk -F': *' '/^(Password|PublicKey):/ {print $2; exit}')
+PUBLIC_KEY=$(printf '%s\n' "$KEYS" | awk -F': *' '/^(Password|PublicKey)/ {print $2; exit}')
 SHORT_ID=$(openssl rand -hex 8)
 [ -n "$UUID" ] && [ -n "$PRIVATE_KEY" ] && [ -n "$PUBLIC_KEY" ] || fail "密钥生成结果不完整，停止安装"
 
@@ -109,7 +109,7 @@ cat > "$TMPD/config.json" <<EOF
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "dest": "$REALITY_SNI:443",
+          "target": "$REALITY_SNI:443",
           "serverNames": ["$REALITY_SNI"],
           "privateKey": "$PRIVATE_KEY",
           "shortIds": ["$SHORT_ID"],
