@@ -7,10 +7,10 @@ umask 077
 
 # ====== 可手工修改的参数 ======
 PUBLIC_IP="155.94.145.240"    # NAT 公网 IPv4；若不是此 IP，请修改
-PUBLIC_TCP_PORT="38610"             # 公网 TCP 高位端口（必填，空着则启动时询问）
-LOCAL_TCP_PORT="38610"              # VPS 内部 TCP 监听端口（空着则询问，默认同公网端口）
+PUBLIC_TCP_PORT=""             # 公网 TCP 高位端口（必填，空着则启动时询问）
+LOCAL_TCP_PORT=""              # VPS 内部 TCP 监听端口（空着则询问，默认同公网端口）
 REALITY_SNI="www.microsoft.com" # REALITY 目标域名；需要支持 TLS 1.3
-XRAY_VERSION="v26.10.10"       # 官方 Xray-core 发布版本（2026-10-10）
+XRAY_VERSION="v26.10.10"       # 官方 Xray-core 发布版本
 GOMEMLIMIT="96MiB"             # Go 运行时软内存目标；不是进程 RSS 硬上限
 # ============================
 
@@ -82,13 +82,25 @@ unzip -p "$TMPD/xray.zip" xray > "$TMPD/xray" || fail "官方 ZIP 中没有 xray
 chmod 755 "$TMPD/xray"
 "$TMPD/xray" version || fail "Xray 二进制无法在本机启动"
 
-info "生成 UUID、REALITY 密钥及 Short ID ..."
+info "生成 UUID、REALITY 密钥及 Short ID（使用 OpenSSL，不依赖 Xray 文本输出解析）..."
 UUID=$("$TMPD/xray" uuid | tr -d '\r\n')
-KEYS=$("$TMPD/xray" x25519)
-PRIVATE_KEY=$(printf '%s\n' "$KEYS" | awk -F': *' '/^PrivateKey:/ {print $2; exit}')
-PUBLIC_KEY=$(printf '%s\n' "$KEYS" | awk -F': *' '/^(Password|PublicKey)/ {print $2; exit}')
+printf '%s\n' "$UUID" | grep -Eq '^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$' || fail "UUID 生成不符合预期格式，请检查 Xray 二进制"
+
+# Alpine 3.22 的 OpenSSL 支持 X25519。通过 RFC 8410 DER 提取 32 字节密钥。
+# PKCS#8 X25519 私钥 DER 为 48 字节，SPKI X25519 公钥 DER 为 44 字节。
+# 此方式避免解析 Xray x25519 的 PrivateKey / Password (PublicKey) 等版本变化。
+openssl genpkey -algorithm X25519 -out "$TMPD/reality-key.pem" || fail "OpenSSL 无法生成 X25519 密钥对"
+openssl pkey -in "$TMPD/reality-key.pem" -outform DER -out "$TMPD/reality-private.der" || fail "无法导出 X25519 私钥 DER"
+openssl pkey -in "$TMPD/reality-key.pem" -pubout -outform DER -out "$TMPD/reality-public.der" || fail "无法导出 X25519 公钥 DER"
+[ "$(wc -c < "$TMPD/reality-private.der")" -eq 48 ] || fail "私钥 DER 长度异常，停止安装以免密钥不匹配"
+[ "$(wc -c < "$TMPD/reality-public.der")" -eq 44 ] || fail "公钥 DER 长度异常，停止安装以免密钥不匹配"
+PRIVATE_KEY=$(tail -c 32 "$TMPD/reality-private.der" | openssl base64 -A | tr '+/' '_-' | tr -d '=\r\n')
+PUBLIC_KEY=$(tail -c 32 "$TMPD/reality-public.der" | openssl base64 -A | tr '+/' '_-' | tr -d '=\r\n')
+printf '%s\n' "$PRIVATE_KEY" | grep -Eq '^[A-Za-z0-9_-]{43}$' || fail "REALITY 私钥编码异常"
+printf '%s\n' "$PUBLIC_KEY" | grep -Eq '^[A-Za-z0-9_-]{43}$' || fail "REALITY 公钥编码异常"
 SHORT_ID=$(openssl rand -hex 8)
-[ -n "$UUID" ] && [ -n "$PRIVATE_KEY" ] && [ -n "$PUBLIC_KEY" ] || fail "密钥生成结果不完整，停止安装"
+[ "${#SHORT_ID}" -eq 16 ] || fail "Short ID 生成异常"
+info "UUID 和 X25519 公私钥生成成功（不在终端输出私钥）"
 
 cat > "$TMPD/config.json" <<EOF
 {
