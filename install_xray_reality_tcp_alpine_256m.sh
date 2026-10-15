@@ -7,8 +7,8 @@ umask 077
 
 # ====== 可手工修改的参数 ======
 PUBLIC_IP="155.94.145.240"    # NAT 公网 IPv4；若不是此 IP，请修改
-PUBLIC_TCP_PORT=""             # 公网 TCP 高位端口（必填，空着则启动时询问）
-LOCAL_TCP_PORT=""              # VPS 内部 TCP 监听端口（空着则询问，默认同公网端口）
+PUBLIC_TCP_PORT="38610"             # 公网 TCP 高位端口（必填，空着则启动时询问）
+LOCAL_TCP_PORT="38610"              # VPS 内部 TCP 监听端口（空着则询问，默认同公网端口）
 REALITY_SNI="www.microsoft.com" # REALITY 目标域名；需要支持 TLS 1.3
 XRAY_VERSION="v26.10.10"       # 官方 Xray-core 发布版本
 GOMEMLIMIT="96MiB"             # Go 运行时软内存目标；不是进程 RSS 硬上限
